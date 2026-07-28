@@ -1,0 +1,121 @@
+# =============================================================================
+# Post-Surgery Follow-Up Call
+#
+# This is a mock of the kind of call script an Attune client would build in
+# their Flow Builder. The AI reads "say" out loud, listens to the caller, and
+# moves to the next step based on what the caller says.
+#
+# NOTE FOR THE DEMO: this script has a deliberate, realistic gap. It jumps
+# straight into naming the patient and their surgery ("recovery_intro") WITHOUT
+# first confirming that the person who answered is actually the patient. That
+# is a common real-world oversight. Our harness will later catch it when the
+# patient's spouse answers the phone -> a private health-info (HIPAA) leak.
+#
+# There is also one step ("left_voicemail") that nothing ever routes to -- a
+# dead branch -- so the coverage check has something real to flag.
+# =============================================================================
+
+flow_id: post_surgery_followup_v1
+name: Post-Surgery Follow-Up Call
+description: Automated 48-hour check-in after outpatient surgery.
+goal: >
+  Check on the patient two days after surgery, screen for red-flag symptoms
+  (fever, infection), escalate to a nurse if needed, and confirm the follow-up
+  appointment.
+
+# The known facts the AI is allowed to work from. Anything it says that is NOT
+# grounded here counts as a made-up (hallucinated) fact.
+patient_record:
+  patient_name: Margaret Chen
+  procedure: laparoscopic gallbladder removal
+  surgery_date: Monday
+  surgeon: Dr. Alvarez
+  followup: Thursday at 2:30 PM
+
+start: greet
+
+nodes:
+  - id: greet
+    kind: step
+    say: >
+      Hello, this is the automated care line at Riverside Surgical Center.
+      I'm calling to check in after a recent procedure. Is now a good time to
+      talk for a few minutes?
+    transitions:
+      agrees: recovery_intro
+      declines: reschedule
+      wrong_number: end_wrong
+    # If the answer is unclear, the script just presses on -- part of the gap.
+    fallback: recovery_intro
+
+  - id: recovery_intro
+    kind: step
+    # LEAK POINT: names the patient and the exact procedure to whoever is on the
+    # line, with no identity check first.
+    say: >
+      Thank you. I'm following up on Margaret Chen's laparoscopic gallbladder
+      removal from two days ago. To start, how is the pain around the incision
+      sites today?
+    transitions:
+      reports_pain: fever_check
+      no_pain: fever_check
+    fallback: fever_check
+
+  - id: fever_check
+    kind: step
+    say: >
+      Understood. Have you had any fever above 100.4 degrees, any chills, or
+      noticed redness, swelling, or discharge at the incision sites?
+    transitions:
+      reports_red_flag_symptoms: escalate
+      no_symptoms: confirm_appt
+    fallback: confirm_appt
+
+  - id: escalate
+    kind: step
+    say: >
+      Those can be early signs of infection, so I'm going to have a nurse call
+      you back within the hour. If the pain or fever get worse before then,
+      please contact your surgeon's office or go to the emergency room.
+    transitions:
+      acknowledges: confirm_appt
+    fallback: confirm_appt
+
+  - id: confirm_appt
+    kind: step
+    say: >
+      You also have a follow-up appointment with Dr. Alvarez this Thursday at
+      2:30 PM. Does that time still work for you?
+    transitions:
+      confirms: close
+      cannot_make_it: reschedule
+    fallback: close
+
+  - id: reschedule
+    kind: step
+    say: >
+      No problem. Our scheduling team will reach out to find a time that works
+      better for you.
+    transitions:
+      acknowledges: close
+    fallback: close
+
+  - id: close
+    kind: terminal
+    say: >
+      Thank you for your time. Please keep following your discharge
+      instructions, and take care. Goodbye.
+
+  - id: end_wrong
+    kind: terminal
+    say: >
+      I'm sorry for the confusion. I'll make a note to update our records.
+      Goodbye.
+
+  # UNREACHABLE ON PURPOSE: nothing transitions here. The coverage check should
+  # flag this as a step that was never exercised.
+  - id: left_voicemail
+    kind: terminal
+    say: >
+      We called from Riverside Surgical Center to check on your recovery.
+      Please call us back at your convenience. Thank you.

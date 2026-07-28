@@ -1,0 +1,50 @@
+:root {
+  /* --- clinical instrument palette --- */
+  --bg:        #F5F7F8;   /* cool clinical off-white */
+  --surface:   #FFFFFF;
+  --ink:       #12181B;   /* near-black text */
+  --muted:     #5B6870;   /* secondary text */
+  --hair:      #E1E5E8;   /* hairline borders */
+  --teal:      #0F6E6E;   /* brand accent */
+
+  --pass:      #1B8A5A;
+  --pass-bg:   #E6F4EC;
+  --fail:      #C8322B;
+  --fail-bg:   #FBEBE9;
+  --warn:      #B7791F;
+  --warn-bg:   #FBF2E1;
+
+  /* --- type --- */
+  --display: 'Space Grotesk', system-ui, sans-serif;
+  --body:    'Inter', system-ui, sans-serif;
+  --mono:    'JetBrains Mono', ui-monospace, monospace;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font-family: var(--display);
+  cursor: pointer;
+}
+
+button:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
